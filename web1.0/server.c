@@ -1,6 +1,8 @@
 #include "server.h"
 #include <arpa/inet.h>
 #include <sys/epoll.h>
+#include <stdio.h>
+#include <fcntl.h>
 /**
  * @brief 初始化监听套接字
  *
@@ -115,6 +117,7 @@ int epollRun(int lfd)
       // 5. 判断事件来源
       if (fd == lfd)
       {
+        acceptClient(lfd, epfd);
         // TODO: 这里应该处理新连接
         // 逻辑：调用 accept 接受新客户端连接，
         // 获取新的通信文件描述符 cfd，
@@ -132,4 +135,27 @@ int epollRun(int lfd)
   }
 
   return 0;
+}
+int acceptClient(int lfd, int epfd)
+{
+  int cfd = accept(lfd, NULL, NULL);
+  if (cfd == -1)
+  {
+    perror("accept");
+    return -1;
+  }
+  int flag = fcntl(cfd, F_GETFL);
+  flag |= O_NONBLOCK;
+  fcntl(cfd, F_SETFL, flag);
+  struct epoll_event ev;
+  ev.data.fd = cfd;
+  ev.events = EPOLLIN | EPOLLET;
+  int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &ev);
+  if (-1 == ret)
+  {
+    perror("epoll_ctl");
+    return -1;
+  }
+
+  return cfd;
 }

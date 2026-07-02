@@ -1,0 +1,49 @@
+# ==========================================
+# 1. C++ 后端部分 (cppserver/)
+# ==========================================
+
+# 忽略编译出来的可执行文件 (这是最重要的！)
+cppserver/server
+
+# 忽略编译产生的中间文件
+cppserver/*.o
+cppserver/*.out
+
+# 如果你以后用 CMake 构建，这些也要忽略
+cppserver/build/
+cppserver/CMakeCache.txt
+cppserver/CMakeFiles/
+
+# ==========================================
+# 2. Vue 前端部分 (vueproject/)
+# ==========================================
+
+# 依赖包文件夹 (体积巨大，绝对不能传)
+vueproject/node_modules/
+
+# 打包后的产物 (通常由 CI/CD 服务器生成，不需要上传)
+vueproject/dist/
+
+# 环境变量文件 (如果有敏感信息如 API Key，建议忽略)
+vueproject/.env.local
+vueproject/.env.*.local
+
+# ==========================================
+# 3. 通用系统/编辑器文件
+# ==========================================
+
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows 系统文件
+Thumbs.db
+ehthumbs.db
+
+# VS Code 编辑器配置 (如果是个人配置建议忽略，团队共享配置则保留)
+.vscode/
+*.code-workspace
+
+# 日志文件
+*.log
