@@ -1,4 +1,4 @@
--- 批量修改所有表的字符集为 utf8mb4 (复制执行即可)
+-- 批量修改所有表的字符集为 utf8mb4 (复制执行即可;逐行复制执行！)
 ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE houses CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE vehicles CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
