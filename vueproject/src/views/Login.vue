@@ -41,17 +41,19 @@ const handleLogin = async () => {
   try {
     const res = await loginApi(loginForm.value)
     // 后端返回格式示例：{code:200, msg:"success", data:{token:"xxx", role:"owner"}}
-    if (res.data.code === 200) {
+    
       // 存储登录凭证
-      localStorage.setItem('token', res.data.data.token)
-      localStorage.setItem('userInfo', JSON.stringify(res.data.data))
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('userInfo', JSON.stringify({
+          id: res.id,
+          username: res.username,
+          real_name: res.real_name,
+          role: res.role
+      }))
       ElMessage.success('登录成功')
       router.push('/home')
-    } else {
-      ElMessage.error(res.data.msg || '账号或密码错误')
-    }
   } catch (err) {
-    ElMessage.error('服务器连接失败，请检查后端服务')
+    ElMessage.error(res.msg || '账号或密码错误')
   }
 }
 </script>

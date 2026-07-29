@@ -28,7 +28,6 @@ service.interceptors.request.use(
     }
     // 设置默认内容类型
     config.headers['Content-Type'] = 'application/json'
-    
     // 【重点】必须返回 config，否则请求发不出去
     return config
   },
@@ -46,9 +45,8 @@ service.interceptors.response.use(
   // 我们添加 <any> 来绕过 TS 对返回值的严格检查，因为我们要改变返回结构
   (response: AxiosResponse<BaseResponse>) => {
     const res = response.data
-
-    // 假设 code 200 为业务成功
-    if (res.code === 200) {
+    // 【修改点】使用 == 代替 ===，以兼容可能的字符串类型 "200"
+    if (res.code == 200) {
       // 【优化点】：这里直接返回 res.data
       // 这样你在组件里调用 api.getUser() 拿到的就是用户数据，而不是整个包裹层
       // 注意：这里必须加 as any，否则 TS 会报错说 "BaseResponse" 缺少 "status" 等属性
@@ -56,26 +54,23 @@ service.interceptors.response.use(
     } else {
       // 业务错误处理 (例如 token 过期、参数错误)
       ElMessage.error(res.msg || 'Error')
-
       // 特殊状态码处理，例如 401 未授权
       if (res.code === 401) {
         // 执行登出逻辑...
         // window.location.href = '/login'
       }
-
       // 【关键点】：错误情况必须 reject，且最好抛出 error 对象或自定义 Error
       // 不要直接 return res，否则组件里的 .catch 捕获不到错误
       return Promise.reject(new Error(res.msg || 'Error'))
     }
   },
-
   // 这里的 (error) => ... 是 HTTP 请求失败回调 (如 404, 500, 断网)
   (error) => {
     console.log('err' + error) // for debug
     ElMessage.error(error.message || '网络请求异常')
-
     // 必须 reject，让调用者的 catch 能够捕获
     return Promise.reject(error)
   }
 )
+
 export default service
