@@ -5,10 +5,14 @@
  * 利用 Drogon 框架的异步回调模式处理请求。
  * 所有方法均使用 std::shared_ptr<HttpResponse> 作为回调参数。
  *
+ * 登录成功后返回真实 JWT Token（由 JwtUtil 生成），
+ * 前端需在后续请求的 Authorization 头中携带此 Token。
+ *
  * @date 2025
  */
 
 #include "UserController.h"
+#include "common/JwtUtil.h"
 
 namespace community {
 namespace controllers {
@@ -35,7 +39,6 @@ void UserController::getUserList(
     }
 
     // 获取分页参数（带默认值）
-    // Drogon 的 getParameter 返回 std::string_view，需手动转换
     int page = 1;
     int pageSize = 10;
     try {
@@ -52,7 +55,7 @@ void UserController::getUserList(
     int total = 0;
     auto users = svc->getUsersByPage(page, pageSize, total);
 
-    // 转换为 JSON 数组
+    // 转换为 JSON 数组（不包含密码哈希）
     Json::Value list(Json::arrayValue);
     for (const auto& u : users) {
         list.append(u.toJson(false));
@@ -120,9 +123,12 @@ void UserController::login(
 
     // 构建返回数据
     auto data = user->toJson(false);
-    // 模拟 token（实际应使用 JWT）
-    data["token"] = "mock-token-" + std::to_string(user->id);
 
+    // 生成真实 JWT Token（HMAC-SHA256）
+    std::string token = JwtUtil::generateToken(user->id, user->username, user->role);
+    data["token"] = token;
+
+    LOG_INFO << "用户登录成功: " << user->username << " (" << user->role << ")";
     callback(ResponseUtil::success(data));
 }
 
@@ -144,6 +150,11 @@ void UserController::createUser(
         return;
     }
 
+    // 支持前端传 password 字段（明文字段名）
+    if (user.passwordHash.empty() && !jsonBody->get("password", "").asString().empty()) {
+        user.passwordHash = jsonBody->get("password", "").asString();
+    }
+
     auto svc = getUserService();
     if (!svc) {
         callback(ResponseUtil::error(RespCode::INTERNAL_ERROR, "服务未初始化"));
@@ -152,13 +163,13 @@ void UserController::createUser(
 
     int newId = svc->createUser(user);
     if (newId <= 0) {
-        callback(ResponseUtil::error(RespCode::INTERNAL_ERROR, "创建用户失败"));
+        callback(ResponseUtil::error(RespCode::INTERNAL_ERROR, "创建用户失败（用户名可能已存在）"));
         return;
     }
 
     Json::Value data;
     data["id"] = newId;
-    callback(ResponseUtil::success(data));
+    callback(ResponseUtil::success(data, "创建成功"));
 }
 
 // ========== PUT /api/users/{id} ==========
@@ -180,6 +191,11 @@ void UserController::updateUser(
 
     auto user = models::User::fromJson(*jsonBody);
     user.id = id;  // 以路径参数中的 ID 为准
+
+    // 支持前端传 password 字段（明文字段名）
+    if (user.passwordHash.empty() && !jsonBody->get("password", "").asString().empty()) {
+        user.passwordHash = jsonBody->get("password", "").asString();
+    }
 
     auto svc = getUserService();
     if (!svc) {

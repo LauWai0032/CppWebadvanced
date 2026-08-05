@@ -28,6 +28,11 @@ endif()
 message(STATUS "MySQL include: ${MYSQL_INCLUDE_DIR}")
 message(STATUS "MySQL library: ${MYSQL_LIBRARY}")
 
+# ==================== 查找 OpenSSL ====================
+# 用于 JWT 签名（HMAC-SHA256）和密码加密（SHA256 + salt）
+find_package(OpenSSL REQUIRED)
+message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")
+
 # ==================== 收集源文件 ====================
 # 控制器源文件
 file(GLOB_RECURSE CTL_SRC controllers/*.cc)
@@ -60,6 +65,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Drogon::Drogon
     ${MYSQL_LIBRARY}
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 # ==================== Drogon 视图处理 ====================

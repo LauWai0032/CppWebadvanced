@@ -28,6 +28,10 @@ namespace services {
  *
  * 通过 DbPool 获取数据库连接，执行 SQL 操作。
  * 所有数据库操作都是线程安全的（连接池 + MySQL 自身线程安全机制）。
+ *
+ * 密码存储：
+ *   - 使用 SHA256 + 随机盐值（见 PasswordUtil）
+ *   - 存储格式：salt$hash
  */
 class UserService : public IUserService {
 public:
@@ -66,12 +70,6 @@ public:
     std::vector<models::User> getUsersByPage(int page, int pageSize, int& total) override;
 
 private:
-    /**
-     * @brief 简单的密码哈希（实际应使用 bcrypt 等）
-     * @note 当前版本使用简单的 SHA256 模拟，仅做对比演示
-     */
-    static std::string hashPassword(std::string_view password);
-
     /**
      * @brief 全局服务实例
      */

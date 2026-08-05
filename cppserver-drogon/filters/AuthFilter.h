@@ -1,14 +1,16 @@
 /**
  * @file AuthFilter.h
- * @brief 认证过滤器（中间件模式）
+ * @brief 认证过滤器（JWT Token 验证）
  *
- * 演示 Drogon 的过滤器/中间件机制。
- * 在实际项目中，可用于：
- *   - Token 验证
- *   - 权限检查
- *   - 请求日志记录
+ * 继承 Drogon 的 HttpFilter，实现 JWT 认证中间件。
+ * 从请求头提取 Authorization Bearer Token，调用 JwtUtil 验证有效性。
  *
- * 当前版本为示例实现，仅做日志记录。
+ * 工作流程：
+ *   1. 提取 Authorization 请求头
+ *   2. 解析 Bearer Token
+ *   3. 调用 JwtUtil 验证签名和过期时间
+ *   4. 验证通过：将用户信息存入 request attributes，放行到 Controller
+ *   5. 验证失败：返回 401 未授权响应，拦截请求
  *
  * @date 2025
  */
@@ -23,22 +25,24 @@ namespace filters {
 
 /**
  * @class AuthFilter
- * @brief 认证过滤器
+ * @brief JWT 认证过滤器
  *
- * 继承 drogon::HttpFilter，实现 doFilter 方法。
- * 通过 REGISTER_FILTER 宏自动注册到 Drogon 框架。
+ * 在请求到达 Controller 之前执行 Token 验证。
+ * 验证通过后，以下信息会被写入 request 的 attributes：
+ *   - "userId"   (int)         用户 ID
+ *   - "username" (std::string) 用户名
+ *   - "role"     (std::string) 用户角色
+ *
+ * 使用方式（在 Controller 中）：
+ *   int userId = req->getAttributes()->get<int>("userId");
  */
 class AuthFilter : public drogon::HttpFilter<AuthFilter> {
 public:
     /**
      * @brief 过滤器执行方法
-     * @param req       HTTP 请求
-     * @param callback  回调函数（调用则继续处理，不调用则拦截请求）
-     *
-     * 设计思路（中间件模式）：
-     *   - 在请求到达 Controller 之前执行
-     *   - 可修改请求、拦截请求、或直接返回响应
-     *   - 调用 callback(resp) 表示放行，调用 callback(nullptr) 表示继续
+     * @param req   HTTP 请求
+     * @param fcb   过滤器回调（调用则拦截请求，直接返回响应）
+     * @param fccb  过滤器链回调（调用则放行到下一级）
      */
     void doFilter(const drogon::HttpRequestPtr& req,
                   drogon::FilterCallback&& fcb,

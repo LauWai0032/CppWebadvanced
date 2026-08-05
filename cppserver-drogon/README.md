@@ -14,6 +14,8 @@
 | C++ 标准   | C++20                       |
 | 数据库     | MySQL 8.0（原生 C API）      |
 | JSON 处理  | JsonCpp（Drogon 内置）        |
+| JWT 认证   | 自定义实现（OpenSSL HMAC-SHA256） |
+| 密码加密   | SHA256 + 随机盐（OpenSSL）   |
 | 构建工具   | CMake 3.16+                 |
 | 编译器     | g++ 11.4.0                  |
 
@@ -89,9 +91,11 @@ cppserver-drogon/
 ├── common/
 │   ├── ResponseUtil.h/.cc      # 统一 JSON 响应封装
 │   ├── Logger.h/.cc            # 日志工具（Trantor 封装）
-│   └── DbPool.h/.cc            # MySQL 连接池
+│   ├── DbPool.h/.cc            # MySQL 连接池
+│   ├── JwtUtil.h/.cc           # JWT 工具（HMAC-SHA256 + OpenSSL）
+│   └── PasswordUtil.h/.cc      # 密码加密工具（SHA256 + salt）
 ├── filters/
-│   └── AuthFilter.h/.cc        # 认证过滤器（中间件）
+│   └── AuthFilter.h/.cc        # 认证过滤器（JWT 验证中间件）
 ├── views/                      # 视图模板（暂无）
 ├── plugins/                    # 插件目录（暂无）
 ├── test/                       # 测试目录
@@ -105,6 +109,7 @@ cppserver-drogon/
 ### 前置条件
 - Drogon 1.9.13 已安装（/usr/local/）
 - MySQL 客户端开发库（libmysqlclient-dev）
+- OpenSSL 开发库（libssl-dev）
 - CMake 3.16+
 - g++ 11+（支持 C++20）
 
@@ -130,25 +135,195 @@ cd cppserver-drogon
 
 ## 📡 API 接口
 
-所有接口保持与 cppserver 版本完全一致的格式：
-
-| 方法    | 路径              | 说明         |
-|--------|-------------------|-------------|
-| GET    | /api/users        | 用户列表（分页） |
-| GET    | /api/users/{id}   | 用户详情      |
-| POST   | /api/login        | 用户登录      |
-| POST   | /api/users        | 创建用户      |
-| PUT    | /api/users/{id}   | 更新用户      |
-| DELETE | /api/users/{id}   | 删除用户      |
-
-### 响应格式
+### 统一响应格式
 ```json
 {
     "code": 200,
-    "message": "success",
+    "msg": "success",
     "data": {}
 }
 ```
+
+> **注意**：响应字段名为 `msg`（与前端 axios 封装保持一致），不是 `message`。
+
+### 接口清单
+
+#### 公开接口（无需认证）
+
+| 方法 | 路径        | 说明   | 请求体示例                           | 响应 data 示例                                   |
+|------|-------------|--------|------------------------------------|------------------------------------------------|
+| POST | /api/login  | 用户登录 | `{"username":"admin","password":"123456"}` | `{"token":"eyJhbGciOi...","id":1,"username":"admin","real_name":"管理员","role":"admin"}` |
+
+#### 需要认证的接口（需携带 JWT Token）
+
+所有 `/api/users/*` 接口均需在请求头中携带 Bearer Token：
+```
+Authorization: Bearer <token>
+```
+
+| 方法   | 路径              | 说明         | 查询参数                              | 响应 data 示例                                                                 |
+|--------|-------------------|-------------|-------------------------------------|------------------------------------------------------------------------------|
+| GET    | /api/users        | 用户列表（分页） | `page=1&pageSize=10&username=xxx&role=admin&status=1` | `{"list": [...], "total": 100, "page": 1, "pageSize": 10}`                    |
+| GET    | /api/users/{id}   | 用户详情      | 无                                   | `{"id":1,"username":"admin","real_name":"管理员","phone":"","role":"admin","status":1,"created_at":"2025-01-01 00:00:00"}` |
+| POST   | /api/users        | 创建用户      | 请求体 JSON（见下方）                      | `{"id": 10}`                                                                  |
+| PUT    | /api/users/{id}   | 更新用户      | 请求体 JSON（见下方）                      | `{}`（code=200, msg="更新成功"）                                                |
+| DELETE | /api/users/{id}   | 删除用户      | 无                                   | `{}`（code=200, msg="删除成功"）                                                |
+
+#### 创建/更新用户请求体格式
+```json
+{
+    "username": "testuser",
+    "password": "123456",
+    "real_name": "测试用户",
+    "phone": "13800138000",
+    "role": "owner",
+    "status": 1
+}
+```
+- `password` 字段：创建时必填，更新时可空（表示不修改密码）
+- `role` 可选值：`admin`（管理员）、`property`（物业）、`owner`（业主）
+- `status`：1 正常，0 禁用
+
+### 与前端的对接方式
+
+前端使用 axios 发送请求，request.ts 拦截器自动处理：
+1. **请求拦截器**：自动从 localStorage 读取 Token，添加到 `Authorization: Bearer <token>` 头
+2. **响应拦截器**：判断 code==200 则返回 data；否则弹出错误提示
+3. **401 处理**：Token 过期或无效时，自动清除登录状态并跳转登录页
+
+前端 API 调用示例（已剥离外层包装）：
+```typescript
+import { getUserList } from '@/api/user'
+const data = await getUserList({ page: 1, pageSize: 10 })
+// data 类型为 PageResult<User>，直接是 data 部分
+```
+
+## 🔐 JWT 认证说明
+
+### 认证流程
+
+```
+客户端                                 服务器
+  |                                     |
+  | 1. POST /api/login (用户名+密码)    |
+  |------------------------------------>|
+  |                                     | 2. 查询用户，验证密码（SHA256+salt）
+  |                                     | 3. 生成 JWT Token（HMAC-SHA256）
+  | 4. 返回 { token, 用户信息 }          |
+  |<------------------------------------|
+  |                                     |
+  | 5. GET /api/users (带 Token)        |
+  |------------------------------------>|
+  |                                     | 6. AuthFilter 提取并验证 Token
+  |                                     | 7. 验证通过，写入 request attributes
+  |                                     | 8. Controller 处理业务
+  | 9. 返回业务数据                      |
+  |<------------------------------------|
+```
+
+### JWT 载荷结构
+
+Token 的 Payload 包含以下声明：
+
+| 字段       | 类型   | 说明                        |
+|-----------|--------|---------------------------|
+| `sub`     | number | 主题 = 用户 ID               |
+| `username`| string | 用户名                      |
+| `role`    | string | 用户角色（admin/property/owner） |
+| `iat`     | number | 签发时间（Unix 时间戳）        |
+| `exp`     | number | 过期时间（Unix 时间戳）        |
+
+### Token 默认配置
+
+- **签名算法**：HS256（HMAC-SHA256，基于 OpenSSL 实现）
+- **默认过期时间**：24 小时（86400 秒）
+- **密钥**：默认密钥（生产环境请务必修改，通过 `JwtUtil::setSecret()` 设置）
+
+### AuthFilter 工作方式
+
+1. 从 `Authorization` 请求头提取 Bearer Token
+2. 调用 `JwtUtil::verifyToken()` 验证签名和过期
+3. 验证通过：将 `userId`、`username`、`role` 写入 request attributes
+4. 验证失败：返回 401 JSON 响应，拦截请求
+
+Controller 中使用用户信息：
+```cpp
+auto attrs = req->getAttributes();
+int userId = attrs->get<int>("userId");
+std::string username = attrs->get<std::string>("username");
+std::string role = attrs->get<std::string>("role");
+```
+
+### 密码存储说明
+
+- 加密方式：SHA256 + 随机盐值（16 字节）
+- 存储格式：`salt$hash`（盐值 + `$` + SHA256(salt+password) 的十六进制表示）
+- 实现：`common/PasswordUtil`（基于 OpenSSL）
+- 注意：比明文存储安全，但生产环境建议升级为 bcrypt 或 argon2
+
+## 📚 第二阶段进度
+
+> **第二阶段目标**：用户管理模块端到端跑通，作为后续 7 个模块的可复制样板。
+
+### ✅ 已完成
+
+#### 后端（Drogon）
+- [x] **统一响应字段**：`message` → `msg`，与前端保持一致
+- [x] **密码加密**：SHA256 + 随机盐（PasswordUtil），替代明文比对
+- [x] **JWT 工具类**：`common/JwtUtil.h/.cc`，HMAC-SHA256 签名
+- [x] **认证过滤器**：`AuthFilter` 真正接入 JWT 验证
+  - 从 Authorization 头提取 Bearer Token
+  - 验证签名和过期时间
+  - 验证通过将用户信息写入 request attributes
+  - 验证失败返回 401
+- [x] **用户模块 6 个接口 + 登录接口完整实现**
+  - GET /api/users（分页列表，需认证）
+  - GET /api/users/{id}（详情，需认证）
+  - POST /api/login（登录，公开）
+  - POST /api/users（创建，需认证）
+  - PUT /api/users/{id}（更新，需认证）
+  - DELETE /api/users/{id}（删除，需认证）
+- [x] **登录返回真实 JWT Token**（替代 mock-token）
+- [x] **CMakeLists.txt 更新**：新增 OpenSSL 链接
+- [x] **编译验证**：零错误零警告通过 ✅
+
+#### 前端（Vue 3 + TypeScript）
+- [x] **Pinia 状态管理**：`stores/user.ts` + `stores/index.ts`
+- [x] **Element Plus 图标库**：`@element-plus/icons-vue`
+- [x] **API 层完善**：`api/user.ts`（5 个接口 + 完整类型定义）
+- [x] **类型定义**：`types/index.ts`（User、PageResult、LoginForm 等）
+- [x] **用户列表页**：`views/user/UserList.vue`
+  - 搜索栏（用户名/角色/状态筛选）
+  - 数据表格（Element Plus Table）
+  - 分页器
+  - 新增/编辑弹窗（Form 校验）
+  - 删除确认（MessageBox）
+- [x] **路由配置**：`/users` 路由 + 嵌套路由结构
+- [x] **侧边栏菜单**：用户列表菜单项指向 /users
+- [x] **登录页修复**：catch 块 res.msg 错误修正，改用 Pinia
+- [x] **Axios 封装完善**：401 自动登出、错误统一提示
+
+### 📋 后续模块参考
+
+用户管理模块作为样板模块，后续 7 个模块（房屋、车位、车辆、论坛、二手交易、缴费、报修）均可按以下模式复制：
+
+1. **后端文件结构**（每个模块 5 个文件）：
+   ```
+   controllers/XxxController.h/.cc   — 控制器（路由注册 + 参数校验）
+   services/IXxxService.h            — 服务接口
+   services/XxxService.h/.cc         — 服务实现（数据库操作）
+   models/Xxx.h                      — 数据模型（toJson/fromDbRow）
+   ```
+
+2. **前端文件结构**（每个模块 2 个文件）：
+   ```
+   api/xxx.ts          — API 封装 + 类型
+   views/xxx/XxxList.vue — 列表页（搜索 + 表格 + 分页 + CRUD 弹窗）
+   ```
+
+3. **认证策略**：所有业务接口均挂接 AuthFilter，需 JWT Token
+
+4. **响应格式**：统一使用 ResponseUtil，code/msg/data 三段式
 
 ## 🧪 C++ 特性使用
 
@@ -173,10 +348,11 @@ cd cppserver-drogon
 |----------|------------------------------|------------------------|
 | 单例模式  | `DbPool::instance()`         | 全局唯一数据库连接池     |
 | 工厂模式  | Drogon HttpController 宏     | 框架自动实例化 Controller |
-| 中间件模式 | `AuthFilter`                 | 请求拦截/日志/鉴权       |
+| 中间件模式 | `AuthFilter`                 | JWT 认证拦截            |
 | 依赖注入  | `UserService::setInstance()`  | 服务层全局注入            |
 | RAII     | `DbConnection`               | 数据库连接自动归还       |
 | 接口隔离  | `IUserService`               | Controller 依赖抽象接口   |
+| 静态工具类 | `ResponseUtil` / `JwtUtil`    | 无状态工具函数集合        |
 
 ## 📝 许可证
 

@@ -5,8 +5,8 @@
  */
 
 #include "UserService.h"
+#include "common/PasswordUtil.h"
 #include <sstream>
-#include <functional>
 #include <cstring>
 
 namespace community {
@@ -63,7 +63,6 @@ std::optional<models::User> UserService::getUserById(int id) {
             return std::nullopt;
         }
 
-        // 使用结构化绑定（C++17）
         auto user = models::User::fromDbRow(result.rows[0]);
         return user;
     } catch (const std::exception& e) {
@@ -106,20 +105,19 @@ std::optional<models::User> UserService::authenticate(std::string_view username,
         auto result = conn->query(sql);
         
         if (!result.success || result.rows.empty()) {
+            LOG_WARN << "用户不存在或已被禁用: " << std::string(username);
             return std::nullopt;
         }
 
         auto user = models::User::fromDbRow(result.rows[0]);
         
-        // 验证密码（简单比对，实际应使用 bcrypt）
-        std::string inputHash = hashPassword(password);
-        if (user.passwordHash != inputHash && user.passwordHash != std::string(password)) {
-            // 支持明文和哈希两种比对方式（演示用途）
+        // 使用 PasswordUtil 验证密码（SHA256 + salt）
+        if (!PasswordUtil::verifyPassword(password, user.passwordHash)) {
             LOG_WARN << "用户 " << std::string(username) << " 密码验证失败";
             return std::nullopt;
         }
 
-        // 登录成功，清除密码哈希
+        // 登录成功，清除密码哈希（安全考虑）
         user.passwordHash.clear();
         return user;
     } catch (const std::exception& e) {
@@ -135,8 +133,10 @@ int UserService::createUser(const models::User& user) {
         
         // 转义所有字符串字段
         auto safeUsername = conn->escape(user.username);
-        auto safePassword = conn->escape(user.passwordHash.empty() ? 
-            hashPassword("123456") : user.passwordHash);
+        // 对密码进行哈希处理（SHA256 + salt）
+        std::string hashedPwd = PasswordUtil::hashPassword(
+            user.passwordHash.empty() ? "123456" : user.passwordHash);
+        auto safePassword = conn->escape(hashedPwd);
         auto safeRealName = conn->escape(user.realName);
         auto safePhone = conn->escape(user.phone);
         auto safeRole = conn->escape(user.role);
@@ -180,7 +180,9 @@ bool UserService::updateUser(const models::User& user) {
             sets.push_back("username = '" + conn->escape(user.username) + "'");
         }
         if (!user.passwordHash.empty()) {
-            sets.push_back("password_hash = '" + conn->escape(user.passwordHash) + "'");
+            // 密码字段不为空时，加密后更新
+            std::string hashedPwd = PasswordUtil::hashPassword(user.passwordHash);
+            sets.push_back("password_hash = '" + conn->escape(hashedPwd) + "'");
         }
         if (!user.realName.empty()) {
             sets.push_back("real_name = '" + conn->escape(user.realName) + "'");
@@ -191,6 +193,7 @@ bool UserService::updateUser(const models::User& user) {
         if (!user.role.empty()) {
             sets.push_back("role = '" + conn->escape(user.role) + "'");
         }
+        // status 字段始终更新（0 也有效）
         sets.push_back("status = " + std::to_string(user.status));
 
         if (sets.empty()) {
@@ -274,15 +277,6 @@ std::vector<models::User> UserService::getUsersByPage(int page, int pageSize, in
     }
 
     return users;
-}
-
-// ========== 密码哈希 ==========
-std::string UserService::hashPassword(std::string_view password) {
-    // 简化版：实际生产环境应使用 bcrypt / argon2 等安全哈希算法
-    // 此处仅为演示，直接使用简单哈希
-    std::hash<std::string_view> hasher;
-    auto hashValue = hasher(password);
-    return std::to_string(hashValue);
 }
 
 }  // namespace services
