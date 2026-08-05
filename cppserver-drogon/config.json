@@ -1,0 +1,45 @@
+{
+    "listeners": [
+        {
+            "address": "0.0.0.0",
+            "port": 8080,
+            "https": false
+        }
+    ],
+    "app": {
+        "number_of_threads": 4,
+        "enable_session": true,
+        "session_timeout": 3600,
+        "document_root": "./",
+        "home_page": "index.html",
+        "upload_path": "uploads",
+        "max_connections": 100000,
+        "max_connections_per_ip": 100,
+        "idle_connection_timeout": 60,
+        "server_header_field": "CommunitySystem-Drogon/1.0",
+        "enable_server_header": true,
+        "enable_date_header": true,
+        "client_max_body_size": "10M",
+        "client_max_memory_body_size": "256K",
+        "log": {
+            "use_spdlog": false,
+            "log_path": "./logs",
+            "logfile_base_name": "community",
+            "log_size_limit": 10485760,
+            "max_files": 30,
+            "log_level": "INFO",
+            "display_local_time": true
+        }
+    },
+    "custom_config": {
+        "mysql": {
+            "host": "127.0.0.1",
+            "port": 3306,
+            "user": "root",
+            "password": "123456",
+            "database": "community_system",
+            "charset": "utf8mb4",
+            "pool_size": 10
+        }
+    }
+}
