@@ -38,6 +38,13 @@
 #include "common/DbPool.h"
 #include "common/JwtUtil.h"
 #include "services/UserService.h"
+#include "services/HouseService.h"
+#include "services/VehicleService.h"
+#include "services/ParkingSpotService.h"
+#include "services/ForumPostService.h"
+#include "services/MarketplaceItemService.h"
+#include "services/PropertyFeeService.h"
+#include "services/ServiceRequestService.h"
 
 using namespace community;
 
@@ -83,9 +90,37 @@ int main(int argc, char* argv[]) {
         // 设计思路：通过 setInstance/getInstance 实现依赖注入，
         // Controller 层不直接依赖具体实现类的创建，便于单元测试和替换。
         auto userService = std::make_shared<services::UserService>();
-        // 将服务实例注册到全局服务管理
         services::UserService::setInstance(userService);
-        LOG_INFO << "服务层初始化完成";
+
+        // HouseService
+        auto houseService = std::make_shared<services::HouseService>();
+        services::HouseService::setInstance(houseService);
+
+        // VehicleService
+        auto vehicleService = std::make_shared<services::VehicleService>();
+        services::VehicleService::setInstance(vehicleService);
+
+        // ParkingSpotService
+        auto parkingSpotService = std::make_shared<services::ParkingSpotService>();
+        services::ParkingSpotService::setInstance(parkingSpotService);
+
+        // ForumPostService
+        auto forumPostService = std::make_shared<services::ForumPostService>();
+        services::ForumPostService::setInstance(forumPostService);
+
+        // MarketplaceItemService
+        auto marketplaceItemService = std::make_shared<services::MarketplaceItemService>();
+        services::MarketplaceItemService::setInstance(marketplaceItemService);
+
+        // PropertyFeeService
+        auto propertyFeeService = std::make_shared<services::PropertyFeeService>();
+        services::PropertyFeeService::setInstance(propertyFeeService);
+
+        // ServiceRequestService
+        auto serviceRequestService = std::make_shared<services::ServiceRequestService>();
+        services::ServiceRequestService::setInstance(serviceRequestService);
+
+        LOG_INFO << "服务层初始化完成（共 8 个服务）";
 
         // ========== 4. 初始化 JWT 配置 ==========
         // 设置 JWT 签名密钥和默认过期时间。

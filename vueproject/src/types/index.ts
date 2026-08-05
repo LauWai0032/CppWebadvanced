@@ -204,3 +204,442 @@ export interface UserState {
   /** 用户角色 */
   role: UserRole | string
 }
+
+// ==================== 房屋管理相关类型 ====================
+
+/**
+ * @interface House
+ * @brief 房屋管理信息类型
+ *
+ * 对应后端 models::House 结构体和数据库 houses 表。
+ */
+export interface House {
+  /** ID */
+  id: number
+  /** 楼栋号 */
+  building_no: string
+  /** 单元号 */
+  unit_no: string
+  /** 门牌号 */
+  room_no: string
+  /** 面积 */
+  area: number
+  /** 业主ID */
+  owner_id: number
+}
+
+/**
+ * @interface HouseForm
+ * @brief 房屋管理表单数据类型（新增/编辑时的表单字段）
+ */
+export interface HouseForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 楼栋号 */
+  building_no: string
+  /** 单元号 */
+  unit_no: string
+  /** 门牌号 */
+  room_no: string
+  /** 面积(平米) */
+  area: number
+  /** 业主ID */
+  owner_id: number
+}
+
+/**
+ * @interface HouseQueryParams
+ * @brief 房屋管理列表查询参数
+ */
+export interface HouseQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 楼栋号（可选） */
+  building_no?: string
+  /** 门牌号（可选） */
+  room_no?: string
+}
+
+// ==================== 车辆管理相关类型 ====================
+
+/**
+ * @interface Vehicle
+ * @brief 车辆管理信息类型
+ *
+ * 对应后端 models::Vehicle 结构体和数据库 vehicles 表。
+ */
+export interface Vehicle {
+  /** ID */
+  id: number
+  /** 车主ID */
+  user_id: number
+  /** 车牌号 */
+  plate_number: string
+  /** 品牌 */
+  brand: string
+  /** 颜色 */
+  color: string
+  /** 状态 */
+  status: number
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * @interface VehicleForm
+ * @brief 车辆管理表单数据类型（新增/编辑时的表单字段）
+ */
+export interface VehicleForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 车主ID */
+  user_id: number
+  /** 车牌号 */
+  plate_number: string
+  /** 品牌 */
+  brand: string
+  /** 颜色 */
+  color: string
+  /** 状态 */
+  status: string
+}
+
+/**
+ * @interface VehicleQueryParams
+ * @brief 车辆管理列表查询参数
+ */
+export interface VehicleQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 车牌号（可选） */
+  plate_number?: string
+  /** 车主ID（可选） */
+  user_id?: string
+}
+
+// ==================== 车位管理相关类型 ====================
+
+/**
+ * @interface ParkingSpot
+ * @brief 车位管理信息类型
+ *
+ * 对应后端 models::ParkingSpot 结构体和数据库 parkingspots 表。
+ */
+export interface ParkingSpot {
+  /** ID */
+  id: number
+  /** 车位编号 */
+  spot_number: string
+  /** 区域 */
+  zone: string
+  /** 类型 */
+  type: string
+  /** 当前车辆ID */
+  current_vehicle_id: number
+  /** 是否占用 */
+  is_occupied: number
+  /** 更新时间 */
+  updated_at: string
+}
+
+/**
+ * @interface ParkingSpotForm
+ * @brief 车位管理表单数据类型（新增/编辑时的表单字段）
+ */
+export interface ParkingSpotForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 车位编号 */
+  spot_number: string
+  /** 区域 */
+  zone: string
+  /** 类型 */
+  type: string
+  /** 当前车辆ID */
+  current_vehicle_id: number
+  /** 是否占用 */
+  is_occupied: string
+}
+
+/**
+ * @interface ParkingSpotQueryParams
+ * @brief 车位管理列表查询参数
+ */
+export interface ParkingSpotQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 车位编号（可选） */
+  spot_number?: string
+  /** 区域（可选） */
+  zone?: string
+  /** 类型（可选） */
+  type?: string
+  /** 是否占用（可选） */
+  is_occupied?: string
+}
+
+// ==================== 论坛帖子相关类型 ====================
+
+/**
+ * @interface ForumPost
+ * @brief 论坛帖子信息类型
+ *
+ * 对应后端 models::ForumPost 结构体和数据库 forumposts 表。
+ */
+export interface ForumPost {
+  /** ID */
+  id: number
+  /** 发帖人ID */
+  user_id: number
+  /** 标题 */
+  title: string
+  /** 正文 */
+  content: string
+  /** 分类 */
+  category: string
+  /** 标签 */
+  tags: string
+  /** 附件 */
+  attachments: string
+  /** 状态 */
+  status: number
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * @interface ForumPostForm
+ * @brief 论坛帖子表单数据类型（新增/编辑时的表单字段）
+ */
+export interface ForumPostForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 标题 */
+  title: string
+  /** 发帖人ID */
+  user_id: number
+  /** 分类 */
+  category: string
+  /** 标签(逗号分隔) */
+  tags: string
+  /** 正文 */
+  content: string
+  /** 状态 */
+  status: string
+}
+
+/**
+ * @interface ForumPostQueryParams
+ * @brief 论坛帖子列表查询参数
+ */
+export interface ForumPostQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 标题（可选） */
+  title?: string
+  /** 分类（可选） */
+  category?: string
+}
+
+// ==================== 二手交易相关类型 ====================
+
+/**
+ * @interface MarketplaceItem
+ * @brief 二手交易信息类型
+ *
+ * 对应后端 models::MarketplaceItem 结构体和数据库 marketplaceitems 表。
+ */
+export interface MarketplaceItem {
+  /** ID */
+  id: number
+  /** 发布者ID */
+  seller_id: number
+  /** 物品标题 */
+  title: string
+  /** 物品描述 */
+  description: string
+  /** 交易方式 */
+  exchange_type: string
+  /** 售价 */
+  price: number
+  /** 期望交换物品 */
+  expect_item: string
+  /** 状态 */
+  status: string
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * @interface MarketplaceItemForm
+ * @brief 二手交易表单数据类型（新增/编辑时的表单字段）
+ */
+export interface MarketplaceItemForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 物品标题 */
+  title: string
+  /** 发布者ID */
+  seller_id: number
+  /** 交易方式 */
+  exchange_type: string
+  /** 售价 */
+  price: number
+  /** 期望交换物品 */
+  expect_item: string
+  /** 物品描述 */
+  description: string
+  /** 状态 */
+  status: string
+}
+
+/**
+ * @interface MarketplaceItemQueryParams
+ * @brief 二手交易列表查询参数
+ */
+export interface MarketplaceItemQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 标题（可选） */
+  title?: string
+  /** 交易方式（可选） */
+  exchange_type?: string
+  /** 状态（可选） */
+  status?: string
+}
+
+// ==================== 物业账单相关类型 ====================
+
+/**
+ * @interface PropertyFee
+ * @brief 物业账单信息类型
+ *
+ * 对应后端 models::PropertyFee 结构体和数据库 propertyfees 表。
+ */
+export interface PropertyFee {
+  /** ID */
+  id: number
+  /** 房屋ID */
+  house_id: number
+  /** 费用类型 */
+  fee_type: string
+  /** 应缴金额 */
+  amount: number
+  /** 账单月份 */
+  bill_month: string
+  /** 状态 */
+  status: string
+  /** 支付方式 */
+  payment_method: string
+  /** 支付时间 */
+  paid_at: string
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * @interface PropertyFeeForm
+ * @brief 物业账单表单数据类型（新增/编辑时的表单字段）
+ */
+export interface PropertyFeeForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 房屋ID */
+  house_id: number
+  /** 费用类型 */
+  fee_type: string
+  /** 应缴金额 */
+  amount: number
+  /** 账单月份 */
+  bill_month: string
+  /** 状态 */
+  status: string
+  /** 支付方式 */
+  payment_method: string
+}
+
+/**
+ * @interface PropertyFeeQueryParams
+ * @brief 物业账单列表查询参数
+ */
+export interface PropertyFeeQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 费用类型（可选） */
+  fee_type?: string
+  /** 状态（可选） */
+  status?: string
+  /** 账单月份（可选） */
+  bill_month?: string
+}
+
+// ==================== 报修投诉相关类型 ====================
+
+/**
+ * @interface ServiceRequest
+ * @brief 报修投诉信息类型
+ *
+ * 对应后端 models::ServiceRequest 结构体和数据库 servicerequests 表。
+ */
+export interface ServiceRequest {
+  /** ID */
+  id: number
+  /** 发起人ID */
+  user_id: number
+  /** 类型 */
+  type: string
+  /** 标题 */
+  title: string
+  /** 详细描述 */
+  description: string
+  /** 状态 */
+  status: string
+  /** 创建时间 */
+  created_at: string
+}
+
+/**
+ * @interface ServiceRequestForm
+ * @brief 报修投诉表单数据类型（新增/编辑时的表单字段）
+ */
+export interface ServiceRequestForm {
+  /** ID（编辑时有值，新增时为 undefined） */
+  id?: number
+  /** 标题 */
+  title: string
+  /** 发起人ID */
+  user_id: number
+  /** 类型 */
+  type: string
+  /** 详细描述 */
+  description: string
+  /** 状态 */
+  status: string
+}
+
+/**
+ * @interface ServiceRequestQueryParams
+ * @brief 报修投诉列表查询参数
+ */
+export interface ServiceRequestQueryParams {
+  /** 页码（从 1 开始） */
+  page: number
+  /** 每页条数 */
+  pageSize: number
+  /** 类型（可选） */
+  type?: string
+  /** 状态（可选） */
+  status?: string
+}

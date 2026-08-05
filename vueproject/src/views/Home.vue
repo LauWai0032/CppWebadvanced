@@ -68,26 +68,27 @@
             <el-menu-item index="/users">用户列表</el-menu-item>
           </el-sub-menu>
 
-          <!-- 社区业务（预留菜单项，后续模块逐步实现） -->
+          <!-- 社区业务（已实现菜单项） -->
           <el-sub-menu index="business">
             <template #title>
               <el-icon><OfficeBuilding /></el-icon>
               <span>社区业务</span>
             </template>
-            <el-menu-item index="/business/houses" disabled>房屋管理</el-menu-item>
-            <el-menu-item index="/business/parking" disabled>车辆车位</el-menu-item>
-            <el-menu-item index="/business/forum" disabled>论坛帖子</el-menu-item>
-            <el-menu-item index="/business/market" disabled>二手交易</el-menu-item>
+            <el-menu-item index="/houses">房屋管理</el-menu-item>
+            <el-menu-item index="/vehicles">车辆管理</el-menu-item>
+            <el-menu-item index="/parking">车位管理</el-menu-item>
+            <el-menu-item index="/forum">论坛帖子</el-menu-item>
+            <el-menu-item index="/market">二手交易</el-menu-item>
           </el-sub-menu>
 
-          <!-- 物业账单（预留菜单项） -->
+          <!-- 物业账单（已实现菜单项） -->
           <el-sub-menu index="bills">
             <template #title>
               <el-icon><Wallet /></el-icon>
               <span>物业账单</span>
             </template>
-            <el-menu-item index="/bills/payment" disabled>缴费记录</el-menu-item>
-            <el-menu-item index="/bills/repair" disabled>报修投诉</el-menu-item>
+            <el-menu-item index="/bills">缴费记录</el-menu-item>
+            <el-menu-item index="/repair">报修投诉</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

@@ -357,3 +357,82 @@ std::string role = attrs->get<std::string>("role");
 ## 📝 许可证
 
 本项目为教学/对比参考用途。
+
+## 📚 第三阶段进度
+
+> **第三阶段目标**：批量扩展剩余 7 个业务模块，以 User 模块为样板，
+> 把房屋、车辆、车位、论坛、二手交易、物业账单、报修投诉全部实现。
+
+### ✅ 已完成
+
+#### 后端（Drogon）— 7 个模块 × 5 文件 = 35 个文件
+- [x] **房屋管理**（houses 表）
+  - Model: `models/House.h`
+  - Service: `services/IHouseService.h` + `services/HouseService.h/.cc`
+  - Controller: `controllers/HouseController.h/.cc`
+  - 接口：列表(分页+楼栋号/业主ID筛选) / 详情 / 新增 / 修改 / 删除
+- [x] **车辆管理**（vehicles 表）
+  - Model: `models/Vehicle.h`
+  - Service: `services/IVehicleService.h` + `services/VehicleService.h/.cc`
+  - Controller: `controllers/VehicleController.h/.cc`
+  - 接口：列表(分页+车牌号/车主ID筛选) / 详情 / 新增 / 修改 / 删除
+- [x] **车位管理**（parking_spots 表）
+  - Model: `models/ParkingSpot.h`
+  - Service: `services/IParkingSpotService.h` + `services/ParkingSpotService.h/.cc`
+  - Controller: `controllers/ParkingSpotController.h/.cc`
+  - 接口：列表(分页+区域/类型/占用筛选) / 详情 / 新增 / 修改 / 删除
+  - 额外接口：车辆入场 PUT /parking-spots/{id}/park、车辆离场 PUT /parking-spots/{id}/leave
+- [x] **论坛帖子**（forum_posts 表）
+  - Model: `models/ForumPost.h`（tags/attachments 用 std::string 存储 JSON）
+  - Service: `services/IForumPostService.h` + `services/ForumPostService.h/.cc`
+  - Controller: `controllers/ForumPostController.h/.cc`
+  - 接口：列表(分页+分类/标题搜索) / 详情 / 发布 / 修改 / 删除
+- [x] **二手交易**（marketplace_items 表）
+  - Model: `models/MarketplaceItem.h`
+  - Service: `services/IMarketplaceItemService.h` + `services/MarketplaceItemService.h/.cc`
+  - Controller: `controllers/MarketplaceItemController.h/.cc`
+  - 接口：列表(分页+交易方式/状态/标题筛选) / 详情 / 发布 / 修改 / 删除
+- [x] **物业账单**（property_fees 表）
+  - Model: `models/PropertyFee.h`
+  - Service: `services/IPropertyFeeService.h` + `services/PropertyFeeService.h/.cc`
+  - Controller: `controllers/PropertyFeeController.h/.cc`
+  - 接口：列表(分页+费用类型/状态/月份/房屋ID筛选) / 详情 / 生成 / 修改 / 删除
+  - 额外接口：缴费 PUT /property-fees/{id}/pay
+- [x] **服务请求/报修投诉**（service_requests 表）
+  - Model: `models/ServiceRequest.h`
+  - Service: `services/IServiceRequestService.h` + `services/ServiceRequestService.h/.cc`
+  - Controller: `controllers/ServiceRequestController.h/.cc`
+  - 接口：列表(分页+类型/状态筛选) / 详情 / 提交 / 修改 / 删除
+  - 额外接口：状态流转 PUT /service-requests/{id}/status
+- [x] **main.cc 更新**：注册全部 8 个服务（User + 7 个新模块）
+- [x] **编译验证**：零错误零警告通过 ✅（`cmake .. && make -j$(nproc)`）
+
+#### 前端（Vue 3 + TypeScript）— 7 个模块
+- [x] **API 层**：每个模块一个 `api/xxx.ts`，完整类型定义
+  - `api/house.ts`、`api/vehicle.ts`、`api/parking.ts`
+  - `api/forum.ts`、`api/marketplace.ts`
+  - `api/propertyFee.ts`、`api/serviceRequest.ts`
+- [x] **类型定义**：`types/index.ts` 追加 7 个模块的类型
+  - House/Vehicle/ParkingSpot/ForumPost/MarketplaceItem/PropertyFee/ServiceRequest
+  - 每个类型配套 Form 和 QueryParams 类型
+- [x] **页面组件**：每个模块一个列表页（搜索 + 表格 + 分页 + CRUD 弹窗）
+  - `views/house/HouseList.vue`
+  - `views/vehicle/VehicleList.vue`
+  - `views/parking/ParkingSpotList.vue`（含入场/离场按钮）
+  - `views/forum/ForumPostList.vue`
+  - `views/marketplace/MarketItemList.vue`
+  - `views/property-fee/PropertyFeeList.vue`（含缴费按钮）
+  - `views/service-request/ServiceRequestList.vue`（含状态流转按钮）
+- [x] **路由配置**：`router/index.ts` 追加 7 个路由（嵌套在 Home 下）
+  - /houses、/vehicles、/parking、/forum、/market、/bills、/repair
+- [x] **菜单配置**：`Home.vue` 侧边栏启用所有菜单项，指向正确路由
+- [x] **详细中文注释**：所有文件均有清晰的中文注释
+
+#### 架构一致性
+- [x] 命名空间统一：`community::models` / `community::services` / `community::controllers`
+- [x] 单例模式：每个 Service 都有 `getInstance()` / `setInstance()`
+- [x] AuthFilter：所有接口均挂接认证过滤器
+- [x] 分页查询：统一模式（vector + total 引用传参）
+- [x] 响应格式：统一 `{ code, msg, data }`，使用 ResponseUtil
+- [x] 数据库操作：DbPool + 原生 MySQL C API + RAII 连接管理
+- [x] 前端 Element Plus 风格统一，与 UserList 保持一致

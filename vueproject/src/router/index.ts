@@ -23,6 +23,13 @@ import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
 import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
 import UserList from '../views/user/UserList.vue'
+import HouseList from '../views/house/HouseList.vue'
+import VehicleList from '../views/vehicle/VehicleList.vue'
+import ParkingSpotList from '../views/parking/ParkingSpotList.vue'
+import ForumPostList from '../views/forum/ForumPostList.vue'
+import MarketItemList from '../views/marketplace/MarketItemList.vue'
+import PropertyFeeList from '../views/property-fee/PropertyFeeList.vue'
+import ServiceRequestList from '../views/service-request/ServiceRequestList.vue'
 
 /**
  * @brief 登录认证守卫
@@ -80,6 +87,41 @@ const routes = [
         path: '/users',
         component: UserList,
         meta: { title: '用户管理' },
+      },
+      {
+        path: '/houses',
+        component: HouseList,
+        meta: { title: '房屋管理' },
+      },
+      {
+        path: '/vehicles',
+        component: VehicleList,
+        meta: { title: '车辆管理' },
+      },
+      {
+        path: '/parking',
+        component: ParkingSpotList,
+        meta: { title: '车位管理' },
+      },
+      {
+        path: '/forum',
+        component: ForumPostList,
+        meta: { title: '论坛帖子' },
+      },
+      {
+        path: '/market',
+        component: MarketItemList,
+        meta: { title: '二手交易' },
+      },
+      {
+        path: '/bills',
+        component: PropertyFeeList,
+        meta: { title: '物业账单' },
+      },
+      {
+        path: '/repair',
+        component: ServiceRequestList,
+        meta: { title: '报修投诉' },
       },
     ],
   },
