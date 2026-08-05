@@ -1,98 +1,64 @@
-#include "httplib.h"
-#include "json.hpp"
+/**
+ * @file main.cpp
+ * @brief 程序入口
+ *
+ * 只做最简单的事情：
+ *   1. 创建 App 实例
+ *   2. 加载配置
+ *   3. 注册业务 Controller
+ *   4. 启动服务
+ *
+ * 所有复杂的初始化逻辑都封装在 App 类中，
+ * 遵循"单一职责原则"和"依赖倒置原则"。
+ *
+ * @date 2025
+ */
+
 #include <iostream>
+#include <memory>
 #include <string>
 
-// 统一跨域头封装，所有接口共用
-void setCorsHeader(httplib::Response &res)
-{
-    // 允许前端本地开发域名
-    res.set_header("Access-Control-Allow-Origin", "*");
-    res.set_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.set_header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-    // 允许前端读取自定义响应头
-    res.set_header("Access-Control-Expose-Headers", "*");
-}
+#include "include/common/App.hpp"
+#include "include/common/Logger.hpp"
+#include "include/services/UserService.hpp"
+#include "include/controllers/UserController.hpp"
 
-int main()
-{
-    using json = nlohmann::json;
-    httplib::Server svr;
+int main(int argc, char* argv[]) {
+    using namespace community_system;
 
-    // 处理OPTIONS预检请求（核心，解决跨域拦截）
-    svr.Options("/.*", [](const httplib::Request &req, httplib::Response &res)
-                {
-        setCorsHeader(res);
-        res.status = 204; });
+    // 配置文件路径（可通过命令行参数指定）
+    std::string configPath = "config/config.json";
+    if (argc > 1) {
+        configPath = argv[1];
+    }
 
-    // 测试接口
-    svr.Get("/api/hello", [](const httplib::Request &req, httplib::Response &res)
-            {
-        setCorsHeader(res);
-        std::string json_data = R"({
-            "code": 200,
-            "msg": "Hello from C++ Backend!",
-            "data": {
-                "server": "cpp-httplib",
-                "status": "running"
-            }
-        })";
-        res.set_content(json_data, "application/json"); });
+    try {
+        // 创建应用实例
+        common::App app;
 
-    // 新增登录接口 /api/login 匹配前端请求地址
-    svr.Post("/api/login", [](const httplib::Request &req, httplib::Response &res)
-             {
-        setCorsHeader(res);
-        
-        std::string ret;
-        try {
-            // 1. 解析请求体
-            json req_json = json::parse(req.body);
-            
-            // 2. 从解析后的 JSON 对象中获取值
-            std::string username = req_json.value("username", "");
-            std::string password = req_json.value("password", "");
-
-            // 3. 打印调试信息，这是关键！
-            std::cout << ">>> 收到登录请求 <<<" << std::endl;
-            std::cout << "原始内容: [" << req.body << "]" << std::endl; 
-            std::cout << "解析结果 -> 用户: [" << username << "], 密码: [" << password << "]" << std::endl;
-
-            // 4. 进行比对
-            if (username == "admin" && password == "123456") {
-                std::cout << ">>> 登录成功！ <<<" << std::endl;
-                ret = R"({
-                    "code": 200,
-                    "msg": "登录成功",
-                    "data": {
-                        "token": "admin-token-123456",
-                        "id": 1,
-                        "username": "admin",
-                        "real_name": "管理员",
-                        "role": "admin"
-                    }
-                })";
-            } else {
-                std::cout << ">>> 登录失败：账号或密码不匹配 <<<" << std::endl;
-                ret = R"({
-                    "code": 400,
-                    "msg": "账号或密码错误",
-                    "data": null
-                })";
-            }
-        } catch (json::parse_error& e) {
-            // 5. 处理 JSON 格式错误
-            std::cerr << "!!! JSON 解析错误: " << e.what() << std::endl;
-            ret = R"({
-                "code": 400,
-                "msg": "请求数据格式错误",
-                "data": null
-            })";
+        // 加载配置
+        if (!app.loadConfig(configPath)) {
+            std::cerr << "[Main] Failed to load config: " << configPath << std::endl;
+            std::cerr << "[Main] Using default config... actually will fail but let's try" << std::endl;
+            // 注意：配置加载失败时也可以继续使用默认配置启动，这里选择退出
+            return 1;
         }
 
-        res.set_content(ret, "application/json"); });
+        // ========== 注册业务 Service ==========
+        auto userService = std::make_shared<services::UserService>();
 
-    std::cout << "C++ Backend running on http://0.0.0.0:8080" << std::endl;
-    svr.listen("0.0.0.0", 8080);
-    return 0;
+        // ========== 注册 Controller ==========
+        // （通过依赖注入方式将 Service 注入 Controller）
+        app.registerController<controllers::UserController>(userService);
+
+        // ========== 启动服务 ==========
+        return app.run();
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Main] Fatal exception: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cerr << "[Main] Unknown fatal exception" << std::endl;
+        return 1;
+    }
 }
